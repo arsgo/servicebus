@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/lib4go/dataservicebus/rpc/base/jobconsumer"
+	"github.com/colinyl/dataservicebus/rpc/base/jobconsumer"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"

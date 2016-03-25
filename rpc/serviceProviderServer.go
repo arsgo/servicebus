@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/lib4go/dataservicebus/rpc/base/serviceprovider"
+	"github.com/colinyl/dataservicebus/rpc/base/serviceprovider"
 	"time"
 	"git.apache.org/thrift.git/lib/go/thrift"
 )

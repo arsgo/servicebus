@@ -1,8 +1,8 @@
 package rpc
 
 import (
-	p "github.com/lib4go/lib4go/pool"
-	"github.com/lib4go/dataservicebus/rpc/base/jobconsumer"
+	p "github.com/colinyl/lib4go/pool"
+	"github.com/colinyl/dataservicebus/rpc/base/jobconsumer"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
 )

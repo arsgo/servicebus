@@ -2,9 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/lib4go/lib4go/utility"
-	zk "github.com/lib4go/lib4go/zkClient"
-	"github.com/lib4go/dataservicebus/config"
+	"github.com/colinyl/lib4go/utility"
+	zk "github.com/colinyl/lib4go/zkClient"
+	"github.com/colinyl/dataservicebus/config"
 	"time"
 	//"lib4go/logger"
 	"log"

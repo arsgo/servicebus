@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	p "github.com/lib4go/lib4go/pool"
+	p "github.com/colinyl/lib4go/pool"
 )
 
 //JobConsumerClientPool consumer connections  pool

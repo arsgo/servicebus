@@ -3,7 +3,7 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/lib4go/lib4go/utility"
+	"github.com/colinyl/lib4go/utility"
 	"sort"
 	"strings"
 	"time"

@@ -2,7 +2,7 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/lib4go/lib4go/utility"
+	"github.com/colinyl/lib4go/utility"
 	"time"
 )
 
