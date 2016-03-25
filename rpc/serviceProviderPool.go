@@ -22,7 +22,7 @@ func (c Services) Add(serviceName string, serverIP string) {
 }
 
 //Register 注册服务列表
-func (p *serviceProviderPool) Register(Services services) {
+func (p *serviceProviderPool) Register(services Services) {
 	for i, v := range services {
 		p.pool.Register(i, newserviceProviderClientFactory(v), 1)
 	}
