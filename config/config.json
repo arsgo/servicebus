@@ -1,0 +1,14 @@
+{
+    "zk": [
+        "192.168.101.161:2181"
+    ],
+    "domain": [
+        "/grs/delivery",
+        "/grs/pay"
+    ],
+    "services": [
+        "rpc",
+        "job",
+        "msg"
+    ]
+}
