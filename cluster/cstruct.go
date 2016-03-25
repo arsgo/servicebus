@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/colinyl/lib4go/utility"
 	zk "github.com/colinyl/lib4go/zkClient"
-	"github.com/colinyl/dataservicebus/config"
+	"github.com/colinyl/servicebus/config"
 	"time"
-	//"lib4go/logger"
 	"log"
 	"sync"
 )

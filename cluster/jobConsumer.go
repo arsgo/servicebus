@@ -2,7 +2,7 @@ package cluster
 
 import (
 	"fmt"
-	"lib4go/utility"
+	"github.com/colinyl/lib4go/utility"
 	"time"
 )
 
@@ -21,8 +21,8 @@ func (d *jobConsumer) UpdateJobData(jobName string, ndata utility.DataMap) error
 }
 
 
-//RegisterJobConsumer register job consumer
-func (d *jobConsumer) RegisterJobConsumer(jobName string, ndata utility.DataMap) error {	
+//Register register job consumer
+func (d *jobConsumer) Register(jobName string, ndata utility.DataMap) error {	
     if _,ok:=CurrentJobConfigs.Jobs[jobName];!ok{
         return errjobNotConfig
     }

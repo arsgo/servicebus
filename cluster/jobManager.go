@@ -10,18 +10,18 @@ import (
 
 //Bind bind watcher for job configs changing
 func (d *jobManager) Bind() error {
-	config, err := d.GetJobConfig()
+	config, err := d.GetConfigs()
 	if err != nil {
 		return err
 	}
 	CurrentJobConfigs = config
-	go d.WatchConfigChange()
+	go d.WatchConfigsChange()
 	return nil
 }
 
 
 //PublishJobConfig publish job configs
-func (d *jobManager) PublishJobConfigs(configs *JobConfigs) error {
+func (d *jobManager) PublishConfigs(configs *JobConfigs) error {
 	data, err := json.Marshal(configs)
 	if err != nil {
 		return err
@@ -33,8 +33,8 @@ func (d *jobManager) PublishJobConfigs(configs *JobConfigs) error {
 }
 
 
-//GetJobConfig Get job Config
-func (d *jobManager) GetJobConfig() (*JobConfigs, error) {
+//GetConfigs Get job Config
+func (d *jobManager) GetConfigs() (*JobConfigs, error) {
 	defConfigs := &JobConfigs{}
 	defConfigs.Jobs = make(map[string]*JobConfigItem)
 	configPath := d.dataMap.Translate(jobConfigPath)
@@ -49,7 +49,7 @@ func (d *jobManager) GetJobConfig() (*JobConfigs, error) {
 
 
 //WatchConfigChange  watch job configs changes
-func (d *jobManager) WatchConfigChange() {
+func (d *jobManager) WatchConfigsChange() {
 	configPath := d.dataMap.Translate(jobConfigPath)
 	jobChanges := make(chan string, 10)
 	go zkClient.ZkCli.WatchValue(configPath, jobChanges)
@@ -57,7 +57,7 @@ func (d *jobManager) WatchConfigChange() {
 		select {
 		case <-jobChanges:
 			{
-				configs, err := d.GetJobConfig()
+				configs, err := d.GetConfigs()
 				if err != nil {
 					d.locker.Lock()
 					CurrentJobConfigs = configs
@@ -70,7 +70,7 @@ func (d *jobManager) WatchConfigChange() {
 
 
 //DownloadJobConsumers   download job consumers
-func (d *jobManager) DownloadJobConsumers() (JobConsumerList,error) {
+func (d *jobManager) DownloadConsumers() (JobConsumerList,error) {
 	var jobList JobConsumerList = make(map[string][]string)
 	serviceList, err := zkClient.ZkCli.GetChildren(d.dataMap.Translate(jobRoot))
 	 if err!=nil{

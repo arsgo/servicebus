@@ -150,14 +150,14 @@ func (d *registerCenter) UpdateMasterValue() {
 	}
 }
 
-//GetMaskerValue get mask value
-func (d *registerCenter) GetMaskerValue() (*dsbCenterNodeValue, string) {
+//GetMasterValue get mask value
+func (d *registerCenter) GetMasterValue() (*dsbCenterNodeValue, string) {
 	value, _ := zkClient.ZkCli.GetValue(d.Path)
 	values := []byte(value)
 	dsb := &dsbCenterNodeValue{}
 	err := json.Unmarshal(values, dsb)
 	if err != nil {
-		Log.Infof("get masker value error,[%s],[%s]", value, d.Path)
+		Log.Infof("get master value error,[%s],[%s]", value, d.Path)
 		Log.Error(err)
 	}
 	return dsb, value

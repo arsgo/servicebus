@@ -26,7 +26,7 @@ func main() {
     
 
 	/*time.Sleep(time.Second * 5)
-	dsb, s := dsbcenter.RC.GetMaskerValue()
+	dsb, s := dsbcenter.RC.GetMasterValue()
 	if dsb == nil || dsb.IsMaster != dsbcenter.RC.IsMasterServer || dsb.Last !=dsbcenter.RC.Last {
 		fmt.Printf("is not master server, please check zk server node\r\n org:%s\r\n value:%s,master:[%s,%s],last:[%s,%s]\r\n", 
         s,dsb,dsb.IsMaster,dsbcenter.RC.IsMasterServer,dsb.Last,dsbcenter.RC.Last)

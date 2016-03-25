@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"lib4go/utility"
+	"github.com/colinyl/lib4go/utility"
 	"testing"
 	"time"
 )
@@ -13,7 +13,7 @@ func Test_dsbcenter(t *testing.T) {
 	}
 
 	//test register center master
-	dsb, s := RegisterCenter.GetMaskerValue()
+	dsb, s := RegisterCenter.GetMasterValue()
 	if dsb.IsMaster != RegisterCenter.IsMasterServer {
 		t.Errorf("is not master server, please check zk server node:%s\r\n org:%s", dsb.ToString(), s)
 	}
@@ -86,11 +86,11 @@ func Test_dsbcenter(t *testing.T) {
 	currentJobConfigs.Jobs = make(map[string]*JobConfigItem)
 	currentJobConfigs.Jobs["auto.get.save.info.abc"] = &JobConfigItem{Name: "save user info", Script: "save.lua",
 		Run: 0, Trigger: "10m"}
-	err = JobManager.PublishJobConfigs(currentJobConfigs)
+	err = JobManager.PublishConfigs(currentJobConfigs)
 	if err != nil {
 		t.Error(err)
 	}
-	currentConfigs, errm := JobManager.GetJobConfig()
+	currentConfigs, errm := JobManager.GetConfigs()
 	if errm != nil {
 		t.Error(errm)
 	}
@@ -103,17 +103,17 @@ func Test_dsbcenter(t *testing.T) {
 		t.Error("job configs watcher error")
 	}
 
-	joblist, erm := JobManager.DownloadJobConsumers()
+	joblist, erm := JobManager.DownloadConsumers()
 	if erm != nil {
 		t.Error(erm)
 	}
 	count := len(joblist)
-	err = JobConsumer.RegisterJobConsumer("auto.get.save.info.abc", utility.NewDataMap())
+	err = JobConsumer.Register("auto.get.save.info.abc", utility.NewDataMap())
 	if err != nil {
 		t.Error(err)
 		t.Errorf("count:%d", len(CurrentJobConfigs.Jobs))
 	}
-	joblist, erm = JobManager.DownloadJobConsumers()
+	joblist, erm = JobManager.DownloadConsumers()
 	if erm != nil {
 		t.Error(erm)
 	}
@@ -121,7 +121,7 @@ func Test_dsbcenter(t *testing.T) {
 		t.Errorf("job consumer create error")
 	}
 
-	err = JobConsumer.RegisterJobConsumer("job.query.userinfo1232222322", utility.NewDataMap())
+	err = JobConsumer.Register("job.query.userinfo1232222322", utility.NewDataMap())
 	if err != errjobNotConfig {
 		t.Error("job consumer register error")
 	}
