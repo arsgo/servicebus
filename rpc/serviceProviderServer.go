@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/json"
 	"time"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
@@ -10,7 +11,7 @@ import (
 type ServiceProviderHandler interface {
 	Request(name string, input string) (r string, err error)
 	Send(name string, input string, data []byte) (r string, err error)
-	GetSnap()(map[string]*serviceRequestSnap)
+	GetSnap() map[string]*serviceRequestSnap
 }
 
 //JobProviderServer
@@ -33,6 +34,10 @@ func (rpcServer *ServiceProviderServer) Serve() (er error) {
 	go server.Serve()
 	er = nil
 	return
+}
+func (d *ServiceProviderServer) GetSnap() string {
+	buffer, _ := json.Marshal(d)
+	return string(buffer)
 }
 
 //NewServiceProviderServer

@@ -14,9 +14,6 @@ var log, _ = logger.New("message service center")
 
 func main() {
 
-     mnt:=NewSysMonitor()
-     mnt.Start()
-
 	//绑定注册中心,选举master,自动监控服务列表变化并重新发布服务信息,监控最新的服务列表,并重新注册POOL
 	cluster.RegisterCenter.Bind()
 	cluster.RegisterCenter.WatchServiceListChange(func(services map[string][]string, err error) {
@@ -47,6 +44,10 @@ func main() {
 		}
 		scheduler.Start()
 	})
-	fmt.Println("启动成功")
-
+	fmt.Println("启动成功......")
+	monitor := NewSysMonitor()
+	monitor.Add("center", cluster.RegisterCenter)
+	monitor.Add("server", rpcServer)
+	monitor.Add("job", cluster.JobManager)
+	monitor.Start()
 }

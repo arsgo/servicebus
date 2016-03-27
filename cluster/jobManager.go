@@ -89,6 +89,13 @@ func (d *jobManager) DownloadConsumers() (JobConsumerList, error) {
 	return jobList, nil
 }
 
+func (d *jobManager) GetSnap() string {
+	config,_:=d.GetConfigs()
+	buffer, _ := json.Marshal(config)
+	return string(buffer)
+}
+
+
 func init() {
 	JobManager = &jobManager{}
 	CurrentJobConfigs := &JobConfigs{}

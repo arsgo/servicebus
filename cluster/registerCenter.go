@@ -185,6 +185,14 @@ func (d *registerCenter) GetMasterValue() (*dsbCenterNodeValue, string) {
 	}
 	return dsb, value
 }
+func (d *registerCenter) GetSnap() string {
+	data := make(map[string]string)
+	data["isMaster"] = fmt.Sprintf("%b", d.IsMasterServer)
+	data["path"] = d.Path
+	data["last"] = string(d.Last)
+	buffer, _ := json.Marshal(data)
+	return string(buffer)
+}
 
 func NewRegisterCenter(domain string, ip string) *registerCenter {
 	rc := &registerCenter{}
