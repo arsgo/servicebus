@@ -49,5 +49,6 @@ func main() {
 	monitor.Add("center", cluster.RegisterCenter)
 	monitor.Add("server", rpcServer)
 	monitor.Add("job", cluster.JobManager)
+	monitor.Add("scheduler", scheduler.Schd)
 	monitor.Start()
 }
