@@ -2,11 +2,10 @@ package cluster
 
 import (
 	"encoding/json"
+	"sort"
+
 	"github.com/colinyl/lib4go/utility"
-    "sort"
 )
-
-
 
 //Bind bind watcher for job configs changing
 func (d *jobManager) Bind() error {
@@ -15,10 +14,8 @@ func (d *jobManager) Bind() error {
 		return err
 	}
 	CurrentJobConfigs = config
-	go d.WatchConfigsChange()
 	return nil
 }
-
 
 //PublishJobConfig publish job configs
 func (d *jobManager) PublishConfigs(configs *JobConfigs) error {
@@ -32,7 +29,6 @@ func (d *jobManager) PublishConfigs(configs *JobConfigs) error {
 	return err
 }
 
-
 //GetConfigs Get job Config
 func (d *jobManager) GetConfigs() (*JobConfigs, error) {
 	defConfigs := &JobConfigs{}
@@ -40,59 +36,58 @@ func (d *jobManager) GetConfigs() (*JobConfigs, error) {
 	configPath := d.dataMap.Translate(jobConfigPath)
 	value, err := zkClient.ZkCli.GetValue(configPath)
 	if err != nil {
-        Log.Info("get job config error")
+		Log.Info("get job config error")
 		return defConfigs, err
 	}
 	err = json.Unmarshal([]byte(value), defConfigs)
 	return defConfigs, err
 }
 
-
 //WatchConfigChange  watch job configs changes
-func (d *jobManager) WatchConfigsChange() {
+func (d *jobManager) WatchConfigsChange(callback func(config *JobConfigs, err error)) {
 	configPath := d.dataMap.Translate(jobConfigPath)
 	jobChanges := make(chan string, 10)
 	go zkClient.ZkCli.WatchValue(configPath, jobChanges)
-	for {
-		select {
-		case <-jobChanges:
-			{
-				configs, err := d.GetConfigs()
-				if err != nil {
-					d.locker.Lock()
-					CurrentJobConfigs = configs
-					d.locker.Unlock()
+	go func() {
+		callback(d.GetConfigs())
+		for {
+			select {
+			case <-jobChanges:
+				{
+					configs, err := d.GetConfigs()
+					if err != nil {
+						d.locker.Lock()
+						callback(configs, err)
+						d.locker.Unlock()
+					}
 				}
 			}
 		}
-	}
+	}()
 }
 
-
 //DownloadJobConsumers   download job consumers
-func (d *jobManager) DownloadConsumers() (JobConsumerList,error) {
+func (d *jobManager) DownloadConsumers() (JobConsumerList, error) {
 	var jobList JobConsumerList = make(map[string][]string)
 	serviceList, err := zkClient.ZkCli.GetChildren(d.dataMap.Translate(jobRoot))
-	 if err!=nil{
-         return jobList,err
-     }
+	if err != nil {
+		return jobList, err
+	}
 
 	for _, v := range serviceList {
 		nmap := d.dataMap.Copy()
 		nmap.Set("jobName", v)
 		consumerList, er := zkClient.ZkCli.GetChildren(nmap.Translate(jobConsumerRoot))
-		if er!=nil{
-            return jobList,er
-        }
-        sort.Sort(sort.StringSlice(consumerList))
+		if er != nil {
+			return jobList, er
+		}
+		sort.Sort(sort.StringSlice(consumerList))
 		for _, l := range consumerList {
 			jobList.Add(v, l)
 		}
 	}
-	return jobList,nil
+	return jobList, nil
 }
-
-
 
 func init() {
 	JobManager = &jobManager{}

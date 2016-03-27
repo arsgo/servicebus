@@ -2,18 +2,20 @@ package cluster
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/colinyl/lib4go/utility"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/colinyl/lib4go/utility"
 )
 
 //Bind  bind dsbcenter server to zk
 func (d *registerCenter) Bind() (string, error) {
 	var err error
 	d.Path, err = zkClient.ZkCli.CreateSeqNode(d.dataMap.Translate(dsbServerPath), d.dataMap.Translate(dsbServerValue))
-    if err != nil {
+	if err != nil {
 		Log.Error(err)
 		return "", err
 	}
@@ -22,7 +24,7 @@ func (d *registerCenter) Bind() (string, error) {
 	if er != nil {
 		return "", er
 	}
-	d.IsMasterServer = d.IsMaster(children)
+	d.IsMasterServer = d.isMaster(children)
 	if d.IsMasterServer {
 		d.UpdateMasterValue()
 	}
@@ -30,12 +32,11 @@ func (d *registerCenter) Bind() (string, error) {
 	return d.Path, nil
 }
 
-//IsMaster  check whether the current server is the master server
-func (d *registerCenter) IsMaster(servers []string) bool {
+//isMaster  check whether the current server is the master server
+func (d *registerCenter) isMaster(servers []string) bool {
 	sort.Sort(sort.StringSlice(servers))
 	return strings.HasSuffix(d.Path, servers[0])
 }
-
 
 //DownloadServiceProviders download the list of service providers
 func (d *registerCenter) DownloadServiceProviders() (ServiceProviderList, error) {
@@ -59,8 +60,11 @@ func (d *registerCenter) DownloadServiceProviders() (ServiceProviderList, error)
 	return spList, nil
 }
 
-//UpdateServiceList To update the list of services
-func (d *registerCenter) UpdateServiceList() error {
+//PublishServiceList To update the list of services
+func (d *registerCenter) PublishServiceList() error {
+	if !d.IsMasterServer {
+		return errors.New("必须是master才能发布服务列表")
+	}
 	providers, err := d.DownloadServiceProviders()
 	if err != nil {
 		return err
@@ -77,6 +81,25 @@ func (d *registerCenter) UpdateServiceList() error {
 		return zkClient.ZkCli.UpdateValue(path, serverListData)
 	}
 	return zkClient.ZkCli.CreatePath(path, serverListData)
+}
+
+//WatchServiceListChange 监控服务列表变化
+func (d *registerCenter) WatchServiceListChange(callback func(services map[string][]string, err error)) error {
+	changes := make(chan []string, 10)
+	rootPath := d.dataMap.Translate(servicePublishPath)
+	go func() {
+		callback(d.DownloadServiceProviders())
+		go zkClient.ZkCli.WatchChildren(rootPath, changes)
+		for {
+			select {
+			case <-changes:
+				{
+					callback(d.DownloadServiceProviders())
+				}
+			}
+		}
+	}()
+	return nil
 }
 
 //WatchServiceProviderChange watch whether any service privider is changed
@@ -104,7 +127,7 @@ func (d *registerCenter) WatchServiceProviderChange() error {
 		case <-childrenChanged:
 			{
 				d.UpdateMasterValue()
-				d.UpdateServiceList() //更新服务
+				d.PublishServiceList() //更新服务
 				time.Sleep(time.Second)
 			}
 		}
@@ -128,10 +151,10 @@ EndLoop:
 		case <-children:
 			{
 				data, _ := zkClient.ZkCli.GetChildren(path)
-				if m := d.IsMaster(data); m != d.IsMasterServer && m {
+				if m := d.isMaster(data); m != d.IsMasterServer && m {
 					d.IsMasterServer = true
 					d.UpdateMasterValue()
-					d.UpdateServiceList() //更新服务
+					d.PublishServiceList() //更新服务
 					go d.WatchServiceProviderChange()
 					break EndLoop
 				}
@@ -163,10 +186,15 @@ func (d *registerCenter) GetMasterValue() (*dsbCenterNodeValue, string) {
 	return dsb, value
 }
 
+func NewRegisterCenter(domain string, ip string) *registerCenter {
+	rc := &registerCenter{}
+	rc.dataMap = utility.NewDataMap()
+	rc.dataMap.Set("domain", zkClient.Domain)
+	rc.dataMap.Set("ip", zkClient.LocalIP)
+	rc.dataMap.Set("isMaster", "false")
+	return rc
+}
+
 func init() {
-	RegisterCenter = &registerCenter{}
-	RegisterCenter.dataMap = utility.NewDataMap()
-	RegisterCenter.dataMap.Set("domain", zkClient.Domain)
-	RegisterCenter.dataMap.Set("ip", zkClient.LocalIP)
-	RegisterCenter.dataMap.Set("isMaster", "false")
+	RegisterCenter = NewRegisterCenter(zkClient.Domain, zkClient.LocalIP)
 }

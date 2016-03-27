@@ -79,7 +79,7 @@ type JobConfigItem struct {
 	Name    string
 	Script  string
 	Trigger string
-	Run     int
+	Count     int
 }
 
 //JobConfigs job configs
