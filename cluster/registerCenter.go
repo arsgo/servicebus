@@ -88,6 +88,9 @@ func (d *registerCenter) WatchServiceListChange(callback func(services map[strin
 	changes := make(chan []string, 10)
 	rootPath := d.dataMap.Translate(servicePublishPath)
 	go func() {
+		if callback == nil {
+			return
+		}
 		callback(d.DownloadServiceProviders())
 		go zkClient.ZkCli.WatchChildren(rootPath, changes)
 		for {
@@ -187,9 +190,9 @@ func (d *registerCenter) GetMasterValue() (*dsbCenterNodeValue, string) {
 }
 func (d *registerCenter) GetSnap() string {
 	data := make(map[string]string)
-	data["isMaster"] = fmt.Sprintf("%b", d.IsMasterServer)
+	data["isMaster"] = fmt.Sprintf("%s", d.IsMasterServer)
 	data["path"] = d.Path
-	data["last"] = string(d.Last)
+	data["last"] =  fmt.Sprintf("%d", d.Last)
 	buffer, _ := json.Marshal(data)
 	return string(buffer)
 }
