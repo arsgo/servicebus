@@ -7,8 +7,8 @@ import (
 func (d *registerCenter) StartRPC() {
 	address := rpc.GetLocalRandomAddress()
 	d.Port = address
-    d.dataMap.Set("port",d.Port)
-    d.updateNodeValue()
-	rpcServer := rpc.NewServiceProviderServer(address, d.log, &rpc.ServiceHandler{})
-	rpcServer.Serve()
+	d.dataMap.Set("port", d.Port)
+	d.updateNodeValue()
+	d.rpcServer = rpc.NewServiceProviderServer(address, d.Log, &rpc.ServiceHandler{})
+	d.rpcServer.Serve()
 }

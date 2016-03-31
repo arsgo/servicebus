@@ -46,7 +46,7 @@ type registerCenter struct {
 	OnlineTime     int64
 	LastPublish    int64
 	jobCallback    func(config *JobConfigs, err error)
-	log            *logger.Logger
+	Log            *logger.Logger
 	rpcServer      *rpc.ServiceProviderServer
 }
 
@@ -115,6 +115,8 @@ type serviceProvider struct {
 	Path    string
 	dataMap utility.DataMap
 	Last    int64
+	Log     *logger.Logger
+    Port    string
 }
 
 //ServiceProvider service provider
@@ -140,5 +142,6 @@ func init() {
 	zkClient.Domain = config.Get().Domain
 	zkClient.LocalIP = utility.GetLocalIP("192.168")
 	zkClient.ZkCli, zkClient.Err = zk.New(config.Get().ZKServers, time.Second)
+    
 	//log.Print(zkClient.Err)
 }

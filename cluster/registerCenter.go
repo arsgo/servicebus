@@ -23,16 +23,16 @@ import (
 	"sort"
 	"strings"
 	"time"
-    "github.com/colinyl/lib4go/logger"
+    "log"
+	"github.com/colinyl/lib4go/logger"
 	"github.com/colinyl/lib4go/utility"
 )
 
 //Bind  bind RC Server to zookeeper cluster
-func (d *registerCenter) Bind(log *logger.Logger) (path string, err error) {
-	d.log=log
-    err = d.createPath()
+func (d *registerCenter) Bind() (path string, err error) {
+	err = d.createPath()
 	if err != nil {
-		d.log.Error(err)
+		d.Log.Error(err)
 		return
 	}
 	go d.watchMasterChange()
@@ -51,7 +51,7 @@ func (d *registerCenter) WatchJobChange(callback func(config *JobConfigs, err er
 	}
 	configPath := d.dataMap.Translate(jobConfigPath)
 	jobChanges := make(chan string, 10)
-	d.log.Info("::start watch job config changes")
+	d.Log.Info("::start watch job config changes")
 	go func() {
 		var waitNotify bool
 	START:
@@ -61,7 +61,7 @@ func (d *registerCenter) WatchJobChange(callback func(config *JobConfigs, err er
 			goto START
 		}
 		if waitNotify {
-			d.log.Info("recv job config changed notices")
+			d.Log.Info("recv job config changed notices")
 		}
 		callback(d.getJobConfigs())
 		go zkClient.ZkCli.WatchValue(configPath, jobChanges)
@@ -69,12 +69,12 @@ func (d *registerCenter) WatchJobChange(callback func(config *JobConfigs, err er
 			select {
 			case <-jobChanges:
 				{
-					d.log.Info("recv job config changed")
+					d.Log.Info("recv job config changed")
 					configs, err := d.getJobConfigs()
 					if err != nil {
-						d.log.Infof("error:%+v",err)
+						d.Log.Infof("error:%+v", err)
 					}
-                    callback(configs, err)
+					callback(configs, err)
 				}
 			}
 
@@ -88,7 +88,7 @@ func (d *registerCenter) WatchServicesChange(callback func(services map[string][
 	if callback == nil {
 		return errors.New("callback func must value")
 	}
-	d.log.Info("::start watch services list changes")
+	d.Log.Info("::start watch services list changes")
 	rootPath := d.dataMap.Translate(servicePublishPath)
 	changes := make(chan string, 10)
 	go func() {
@@ -100,7 +100,7 @@ func (d *registerCenter) WatchServicesChange(callback func(services map[string][
 			goto START
 		}
 		if waitNotify {
-			d.log.Info("recv service changed notices")
+			d.Log.Info("recv service changed notices")
 		}
 
 		d.setServiceUpdateTime()
@@ -110,7 +110,7 @@ func (d *registerCenter) WatchServicesChange(callback func(services map[string][
 			select {
 			case <-changes:
 				{
-					d.log.Info("recv service changed notices")
+					d.Log.Info("recv service changed notices")
 					d.setServiceUpdateTime()
 					callback(d.downloadProviders())
 				}
@@ -131,7 +131,12 @@ func NewRegisterCenter(domain string, ip string) *registerCenter {
 }
 
 func init() {
+	var err error
 	RegisterCenter = NewRegisterCenter(zkClient.Domain, zkClient.LocalIP)
+	RegisterCenter.Log, err = logger.New("register center", true)
+    if err!=nil{
+        log.Print(err)
+    }
 }
 
 //------------------------------------------------------------------------------------------------
@@ -142,17 +147,17 @@ func (d *registerCenter) getJobConfigs() (defConfigs *JobConfigs, err error) {
 	defConfigs.Jobs = make(map[string]JobConfigItem)
 	configPath := d.dataMap.Translate(jobConfigPath)
 	if !zkClient.ZkCli.Exists(configPath) {
-        d.log.Info("job config path not exists")
+		d.Log.Info("job config path not exists")
 		return
 	}
 	value, err := zkClient.ZkCli.GetValue(configPath)
 	if err != nil {
-		d.log.Infof("get job config error:%+v", err)
+		d.Log.Infof("get job config error:%+v", err)
 		return
 	}
 	err = json.Unmarshal([]byte(value), &defConfigs.Jobs)
 	if err != nil {
-		d.log.Infof("job config unmarshal error:%+v", err)
+		d.Log.Infof("job config unmarshal error:%+v", err)
 	}
 	return
 }
@@ -164,7 +169,7 @@ func (d *registerCenter) watchMasterChange() {
 		go d.watchServiceProviderChange()
 		return
 	}
-	d.log.Info("::start watch master changes")
+	d.Log.Info("::start watch master changes")
 	var children chan []string
 	children = make(chan []string, 10)
 	path := d.dataMap.Translate(dsbServerRoot)
@@ -192,7 +197,7 @@ func (d *registerCenter) watchCurrentPath() {
 		select {
 		case <-tp.C:
 			if !zkClient.ZkCli.Exists(d.Path) {
-				d.log.Info("RC not exists")
+				d.Log.Info("RC not exists")
 				d.createPath()
 			}
 		}
@@ -205,13 +210,13 @@ func (d *registerCenter) watchServiceProviderChange() error {
 	if !d.IsMasterServer {
 		return nil
 	}
-	d.log.Info("::start watch service providers changes")
+	d.Log.Info("::start watch service providers changes")
 	var changes chan []string
 	changes = make(chan []string, 10)
 	childrenChanged := make(chan []string, 10)
 	rootPath := d.dataMap.Translate(serviceRoot)
 	if !zkClient.ZkCli.Exists(rootPath) {
-		d.log.Infof("services node not exists:%s\r\n", rootPath)
+		d.Log.Infof("services node not exists:%s\r\n", rootPath)
 		time.Sleep(time.Second * 10)
 		return d.watchServiceProviderChange()
 	}
@@ -221,7 +226,7 @@ func (d *registerCenter) watchServiceProviderChange() error {
 	go func() {
 		children, err := zkClient.ZkCli.GetChildren(rootPath)
 		if err != nil {
-			d.log.Error(err)
+			d.Log.Error(err)
 		}
 		for _, v := range children {
 			servicePath := fmt.Sprintf("%s/%s/providers", rootPath, v)
@@ -302,14 +307,14 @@ func (d *registerCenter) isMaster(path string, servers []string) bool {
 }
 
 func (d *registerCenter) serviceChange() {
-	d.log.Info("service provider has changed")
+	d.Log.Info("service provider has changed")
 	d.setServiceUpdateTime()
 	d.updateNodeValue()
 	err := d.publishServices()
 	if err != nil {
-		d.log.Infof("service publish failed:%s", err.Error())
+		d.Log.Infof("service publish failed:%s", err.Error())
 	} else {
-		d.log.Info("service publish success")
+		d.Log.Info("service publish success")
 	}
 	time.Sleep(time.Second)
 }
@@ -330,8 +335,8 @@ func (d *registerCenter) getValue() (*dsbCenterNodeValue, string) {
 	dsb := &dsbCenterNodeValue{}
 	err := json.Unmarshal(values, dsb)
 	if err != nil {
-		d.log.Infof("get master value error,[%s],[%s]", value, d.Path)
-		d.log.Error(err.Error())
+		d.Log.Infof("get master value error,[%s],[%s]", value, d.Path)
+		d.Log.Error(err.Error())
 	}
 	return dsb, value
 }
@@ -347,14 +352,14 @@ func (d *registerCenter) setOnline(path string, master bool) {
 	d.dataMap.Set("path", d.Path)
 	d.dataMap.Set("online", fmt.Sprintf("%d", d.OnlineTime))
 	d.dataMap.Set("last", fmt.Sprintf("%d", d.OnlineTime))
-	d.log.Infof("online:%s", path)
+	d.Log.Infof("online:%s", path)
 	if d.IsMasterServer {
-		d.log.Info("server is master")
+		d.Log.Info("server is master")
 		d.dataMap.Set("type", "master")
 		d.Server = "master"
 		d.WatchJobChange(d.jobCallback)
 	} else {
-		d.log.Info("server is salve")
+		d.Log.Info("server is salve")
 		d.dataMap.Set("type", "salve")
 		d.Server = "salve"
 	}

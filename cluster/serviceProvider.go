@@ -2,10 +2,11 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/colinyl/lib4go/utility"
 	"time"
+    "log"
+	"github.com/colinyl/lib4go/logger"
+	"github.com/colinyl/lib4go/utility"
 )
-
 
 //BindServices  update consumer data
 func (d *serviceProvider) BindServices(serviceNames []string, ndata utility.DataMap) error {
@@ -42,10 +43,14 @@ func (d *registerCenter) ClearServiceProviders() (string, error) {
 	return path, nil
 }
 
-
 func init() {
+	var err error
 	ServiceProvider = &serviceProvider{}
 	ServiceProvider.dataMap = utility.NewDataMap()
 	ServiceProvider.dataMap.Set("domain", zkClient.Domain)
 	ServiceProvider.dataMap.Set("ip", zkClient.LocalIP)
+	ServiceProvider.Log, err = logger.New("service provider", true)
+     if err!=nil{
+        log.Print(err)
+    }
 }
