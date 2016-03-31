@@ -1,30 +1,23 @@
 package cluster
 
 import (
-	"fmt"
+	//"log"
+	"time"
+
+	"github.com/colinyl/lib4go/logger"
 	"github.com/colinyl/lib4go/utility"
 	zk "github.com/colinyl/lib4go/zkClient"
 	"github.com/colinyl/servicebus/config"
-	"time"
-	"log"
-	"sync"
+	"github.com/colinyl/servicebus/rpc"
 )
 
 //-------------------------dsbcenter node value----------------------------
 
 type dsbCenterNodeValue struct {
-	IP       string
-	IsMaster bool
-	Last     int64
+	IP     string
+	Server string
+	Last   string
 }
-
-//ToString register center string
-func (d *dsbCenterNodeValue) ToString() string {
-	return fmt.Sprintf("IP:%s,IsMaster:%s,Last:%d",
-		d.IP, d.IsMaster, d.Last)
-}
-
-//--------------------------------------------------------------------
 
 //-------------------------service provider list----------------------------
 
@@ -44,9 +37,17 @@ func (s ServiceProviderList) Add(serviceName string, server string) {
 //-------------------------register center----------------------------
 type registerCenter struct {
 	Path           string
+	IP             string
+	Port           string
+	Server         string
 	dataMap        utility.DataMap
 	IsMasterServer bool
 	Last           int64
+	OnlineTime     int64
+	LastPublish    int64
+	jobCallback    func(config *JobConfigs, err error)
+	log            *logger.Logger
+	rpcServer      *rpc.ServiceProviderServer
 }
 
 //RegisterCenter  registercenter
@@ -59,6 +60,8 @@ type jobConsumer struct {
 	dataMap  utility.DataMap
 	Last     int64
 	PathList map[string]string
+	configs  *JobConfigs
+	log      *logger.Logger
 }
 
 //JobConsumer service provider
@@ -66,32 +69,18 @@ var JobConsumer *jobConsumer
 
 //--------------------------------------------------------------------
 
-//-------------------------job manger----------------------------
-type jobManager struct {
-	dataMap  utility.DataMap
-	Last     int64
-	PathList map[string]string
-	locker   sync.Mutex
-}
-
 //JobConfigItem job config item
 type JobConfigItem struct {
-	Name    string
-	Script  string
-	Trigger string
-	Count     int
+	Name        string
+	Script      string
+	Trigger     string
+	Concurrency int
 }
 
 //JobConfigs job configs
 type JobConfigs struct {
-	Jobs map[string]*JobConfigItem
+	Jobs map[string]JobConfigItem
 }
-
-//JobManager job manager
-var JobManager *jobManager
-
-//CurrentJobConfigs current job configs
-var CurrentJobConfigs *JobConfigs
 
 //--------------------------------------------------------------------
 
@@ -135,30 +124,6 @@ var ServiceProvider *serviceProvider
 
 //-------------------------service provider list----------------------------
 
-var Log clusterLogger
-
-type clusterLogger interface {
-	Error(error)
-	Info(s string)
-	Infof(f string, arg ...interface{})
-}
-
-type defaultLogger struct {
-}
-
-func (d defaultLogger) Error(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-
-}
-func (d defaultLogger) Info(s string) {
-	log.Print(s)
-}
-func (d defaultLogger) Infof(f string, arg ...interface{}) {
-	log.Printf(f, arg...)
-}
-
 //--------------------------------------------------------------------
 
 type zkClientObj struct {
@@ -171,10 +136,9 @@ type zkClientObj struct {
 var zkClient *zkClientObj
 
 func init() {
-	Log = &defaultLogger{}
 	zkClient = &zkClientObj{}
 	zkClient.Domain = config.Get().Domain
 	zkClient.LocalIP = utility.GetLocalIP("192.168")
 	zkClient.ZkCli, zkClient.Err = zk.New(config.Get().ZKServers, time.Second)
-	Log.Error(zkClient.Err)
+	//log.Print(zkClient.Err)
 }

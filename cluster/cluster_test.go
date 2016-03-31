@@ -1,27 +1,39 @@
 package cluster
 
 import (
-	"github.com/colinyl/lib4go/utility"
+	"strings"
 	"testing"
-	"time"
+	//"time"
+	//"github.com/colinyl/lib4go/utility"
 )
+func Test_dsbcenter(t *testing.T) {
 
-func Test_dsbcenter(t *testing.T) {  
-	 RegisterCenter.Bind()
-	if !zkClient.ZkCli.Exists(RegisterCenter.Path) {
+	master := RegisterCenter
+	master.Bind()
+	if !zkClient.ZkCli.Exists(master.Path) {
 		t.Error("bind failed")
 	}
-
+  /*
 	//test register center master
-	dsb, s := RegisterCenter.GetMasterValue()
-	if dsb.IsMaster != RegisterCenter.IsMasterServer {
-		t.Errorf("is not master server, please check zk server node:%s\r\n org:%s", dsb.ToString(), s)
-	}
+	masterValue, s := master.GetValue()
+	if !strings.EqualFold(masterValue.Server, "master") || !master.IsMasterServer {
+		t.Errorf("is not master server, please check zk server node:%s,%s,%v", s,
+			masterValue.Server, master.IsMasterServer)
+	}*/
 
-	spl, erx := RegisterCenter.DownloadServiceProviders()
+	slave := NewRegisterCenter("/grs/delivery", "192.168.0.245")
+	slave.Bind()
+	slaveValue, st:= slave.getValue()
+    if !strings.EqualFold(slaveValue.Server, "salve") || slave.IsMasterServer {
+		t.Errorf("is not slave server, please check zk server node:%s,%s,%v", st,
+			slaveValue.Server, slave.IsMasterServer)
+	}
+  /*
+	spl, erx := master.DownloadServiceProviders()
 	if erx != nil {
 		t.Error(erx)
 	}
+
 	if len(spl) == 0 {
 		ServiceProvider.BindServices([]string{"order.pay.get"}, utility.NewDataMap())
 		spl, erx = RegisterCenter.DownloadServiceProviders()
@@ -85,7 +97,7 @@ func Test_dsbcenter(t *testing.T) {
 	currentJobConfigs := &JobConfigs{}
 	currentJobConfigs.Jobs = make(map[string]*JobConfigItem)
 	currentJobConfigs.Jobs["auto.get.save.info.abc"] = &JobConfigItem{Name: "save user info", Script: "save.lua",
-		Run: 0, Trigger: "10m"}
+		Count: 0, Trigger: "10m"}
 	err = JobManager.PublishConfigs(currentJobConfigs)
 	if err != nil {
 		t.Error(err)
@@ -125,6 +137,8 @@ func Test_dsbcenter(t *testing.T) {
 	if err != errjobNotConfig {
 		t.Error("job consumer register error")
 	}
-	time.Sleep(time.Microsecond)
-	//time.Sleep(time.Hour)
+     */
+	//	time.Sleep(time.Second*10)
+	//	time.Sleep(time.Hour)
+       
 }

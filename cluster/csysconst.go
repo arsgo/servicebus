@@ -11,7 +11,7 @@ var errjobNotConfig =errors.New("job not config")
 const (
 	dsbServerRoot        = "@domain/dsbcenter/servers"
 	dsbServerPath        = "@domain/dsbcenter/servers/dsb_"
-	dsbServerValue       = `{"ip":"@ip","isMaster":@isMaster,"last":@now}`
+	dsbServerValue       = `{"domain":"@domain","path":"@path","ip":"@ip","port":"@port",server":"@type","online":"@online","lastPublish":"@pst","last":"@last"}`
 	dsbServerConfig      = "@domain/configs/dsbcenter/config"
 	servicePublishPath   = "@domain/configs/services/publish"
 	serviceRoot          = "@domain/services"

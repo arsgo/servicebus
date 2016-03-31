@@ -2,8 +2,9 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/colinyl/lib4go/utility"
 	"time"
+
+	"github.com/colinyl/lib4go/utility"
 )
 
 //BindService consumer bind a service
@@ -24,6 +25,8 @@ func (d *serviceConsumer) UpdateConsumerData(serviceName string, ndata utility.D
 	path, value := d.BindService(serviceName, ndata)
 	zkClient.ZkCli.UpdateValue(path, value)
 }
+
+
 
 func init() {
 	ServiceConsumer = &serviceConsumer{}

@@ -2,9 +2,11 @@ package rpc
 
 import (
 	"errors"
+	"log"
 	"net"
 	"strings"
-    "log"
+	"sync"
+
 	"git.apache.org/thrift.git/lib/go/thrift"
 	p "github.com/colinyl/lib4go/pool"
 	"github.com/colinyl/servicebus/rpc/rpcservice"
@@ -24,30 +26,92 @@ type serviceProviderClient struct {
 
 type serviceProviderPool struct {
 	pool     *p.ObjectPool
-	services map[string][]string
+	services *Services
 }
 
 type serviceProviderClientFactory struct {
-	ip    string
+	ip string
 }
 
-func (s *serviceProviderPool) addServices(svs Services) {
-	for name, server := range svs {
-		for _, sv := range server {
-			s.services[name] = append(s.services[name], sv)
+type serviceItem struct {
+	IP     string
+	Status bool
+}
+
+type serviceCollection map[string]*serviceItem
+
+//Services 服务提供列表
+type Services struct {
+	data map[string]serviceCollection
+	lk   sync.Mutex
+}
+
+func NewServices() *Services {
+	return &Services{data: make(map[string]serviceCollection)}
+}
+
+func CrateServices(sv map[string][]string) (s *Services) {
+	s = NewServices()
+	for k, c := range sv {
+		if _, ok := s.data[k]; !ok {
+			s.data[k] = make(map[string]*serviceItem)
+		}
+
+		for _, ip := range c {
+			if _, ok := s.data[k][ip]; !ok {
+				s.data[k][ip] = &serviceItem{IP: ip, Status: true}
+			}
 		}
 	}
+	return
+}
+
+func (c *Services) Contains(serviceName string, serverIP string) bool {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	if _, ok := c.data[serviceName]; !ok {
+		return false
+	}
+	if _, ok := c.data[serviceName][serverIP]; !ok {
+		return false
+	}
+	return true
+}
+
+func (c *Services) Add(serviceName string, serverIP string) {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	if _, ok := c.data[serviceName]; !ok {
+		c.data[serviceName] = make(map[string]*serviceItem)
+	}
+
+	if _, ok := c.data[serviceName][serverIP]; !ok {
+		c.data[serviceName][serverIP] = &serviceItem{IP: serverIP, Status: true}
+	}
+}
+
+func (c *Services) Remove(serviceName string, serverIP string) {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	if _, ok := c.data[serviceName]; !ok {
+		return
+	}
+
+	if _, ok := c.data[serviceName][serverIP]; !ok {
+		return
+	}
+	c.data[serviceName][serverIP].Status = false
 }
 
 func NewServiceProviderClient(address string) *serviceProviderClient {
-	addr:=address
+	addr := address
 	if !strings.Contains(address, ":") {
-		addr=net.JoinHostPort(address,"1016")
+		addr = net.JoinHostPort(address, "1016")
 	}
-	return &serviceProviderClient{Address:addr}
+	return &serviceProviderClient{Address: addr}
 }
 
-func (client *serviceProviderClient) Open()(err error) {
+func (client *serviceProviderClient) Open() (err error) {
 	client.transport, err = thrift.NewTSocket(client.Address)
 	if err != nil {
 		return err
@@ -84,14 +148,14 @@ func (j *serviceProviderClient) RequestFatal() {
 }
 
 func newserviceProviderClientFactory(ip string) *serviceProviderClientFactory {
-    log.Println(ip)
+	log.Println(ip)
 	return &serviceProviderClientFactory{ip: ip}
 }
 
 func (j *serviceProviderClientFactory) Create() (p.Object, error) {
 	o := NewServiceProviderClient(j.ip)
-	if err:=o.Open();err != nil {
+	if err := o.Open(); err != nil {
 		return nil, err
 	}
-	return o,nil
+	return o, nil
 }

@@ -1,9 +1,12 @@
 package cluster
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/colinyl/lib4go/utility"
 	"time"
+
+	//"github.com/colinyl/lib4go/logger"
+	"github.com/colinyl/lib4go/utility"
 )
 
 //UpdateServiceData  update consumer data
@@ -12,21 +15,22 @@ func (d *jobConsumer) UpdateJobData(jobName string, ndata utility.DataMap) error
 	nmap.Set("jobName", jobName)
 	nmap.Set("now", fmt.Sprintf("%d", time.Now().Unix()))
 	path := nmap.Translate(jobConsumerPath)
-    var (p string
-        ok bool)
+	var (
+		p  string
+		ok bool
+	)
 	if p, ok = d.PathList[path]; !ok {
 		return errJobConsumerNotRegister
-	} 
-	return zkClient.ZkCli.UpdateValue(p, nmap.Translate(jobConsumerValue))	
+	}
+	return zkClient.ZkCli.UpdateValue(p, nmap.Translate(jobConsumerValue))
 }
 
-
 //Register register job consumer
-func (d *jobConsumer) Register(jobName string, ndata utility.DataMap) error {	
-    if _,ok:=CurrentJobConfigs.Jobs[jobName];!ok{
-        return errjobNotConfig
-    }
-    nmap := d.dataMap.Merge(ndata)
+func (d *jobConsumer) Register(jobName string, ndata utility.DataMap) error {
+	if _, ok := d.configs.Jobs[jobName]; !ok {
+		return errjobNotConfig
+	}
+	nmap := d.dataMap.Merge(ndata)
 	nmap.Set("jobName", jobName)
 	nmap.Set("now", fmt.Sprintf("%d", time.Now().Unix()))
 	path := nmap.Translate(jobConsumerPath)
@@ -40,11 +44,33 @@ func (d *jobConsumer) Register(jobName string, ndata utility.DataMap) error {
 	return nil
 }
 
+func (d *jobConsumer) getConfigs() (*JobConfigs, error) {
+	defConfigs := &JobConfigs{}
+	defConfigs.Jobs = make(map[string]JobConfigItem)
+	configPath := d.dataMap.Translate(jobConfigPath)
+	value, err := zkClient.ZkCli.GetValue(configPath)
+	if err != nil {
+		d.log.Info("get job config error")
+		return defConfigs, err
+	}
+	err = json.Unmarshal([]byte(value), defConfigs)
+	return defConfigs, err
+}
+
+//NewJobConsumer create a new job consumer
+func NewJobConsumer() *jobConsumer {
+	var err error
+	jc := &jobConsumer{}
+	jc.dataMap = utility.NewDataMap()
+	jc.dataMap.Set("domain", zkClient.Domain)
+	jc.dataMap.Set("ip", zkClient.LocalIP)
+	jc.PathList = make(map[string]string)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return jc
+}
 
 func init() {
-	JobConsumer = &jobConsumer{}
-	JobConsumer.dataMap = utility.NewDataMap()
-	JobConsumer.dataMap.Set("domain", zkClient.Domain)
-    JobConsumer.dataMap.Set("ip", zkClient.LocalIP)
-	JobConsumer.PathList = make(map[string]string)	
+	JobConsumer = NewJobConsumer()
 }

@@ -1,9 +1,9 @@
-
 package scheduler
 
 import (
+	"encoding/json"
+
 	"github.com/colinyl/cron"
-    "encoding/json"
 )
 
 type Scheduler struct {
@@ -24,10 +24,10 @@ func Start() {
 
 func Stop() {
 	Schd.c.Stop()
+	Schd = &Scheduler{c: cron.New()}
 }
 
-
-func (s *Scheduler)GetSnap() string {
+func (s *Scheduler) GetSnap() string {
 	snaps := make(map[string]*JobSnap)
 	entries := s.c.Entries()
 	for _, v := range entries {
@@ -36,7 +36,7 @@ func (s *Scheduler)GetSnap() string {
 			Prev: v.Prev, Next: v.Next}
 
 	}
-    buffer,_:=json.Marshal(snaps)
+	buffer, _ := json.Marshal(snaps)
 	return string(buffer)
 
 }

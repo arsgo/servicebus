@@ -20,6 +20,6 @@ func readConfig() *sysConfig {
 func getDefConfig() *sysConfig {
 	c := &sysConfig{}
 	c.ZKServers = []string{"192.168.101.161:2181"}
-	c.Domain = "/grs/delivery"
+	c.Domain = "/grs/pay"
 	return c
 }
