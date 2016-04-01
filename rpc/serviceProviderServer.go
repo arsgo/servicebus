@@ -51,55 +51,6 @@ func NewServiceProviderServer(address string,log *logger.Logger, handler Service
 	return &ServiceProviderServer{Address: address, Handler: handler,log:log}
 }
 
-type serviceRequestSnap struct {
-	total   int
-	current int
-	success int
-	failed  int
-}
-
-type ServiceHandler struct {
-	services map[string]*serviceRequestSnap
-}
-
-func NewServiceHandler() *ServiceHandler {
-	return &ServiceHandler{services: make(map[string]*serviceRequestSnap)}
-}
-
-func (s *ServiceHandler) Request(name string, input string) (r string, err error) {
-	if _, ok := s.services[name]; !ok {
-		s.services[name] = &serviceRequestSnap{}
-	}
-	s.services[name].total++
-	s.services[name].current++
-	defer func() {
-		s.services[name].current--
-		if err == nil {
-			s.services[name].success++
-		} else {
-			s.services[name].failed++
-		}
-	}()
-	return ServiceProviderPool.Request(name, input)
-}
-
-func (s *ServiceHandler) Send(name string, input string, data []byte) (r string, err error) {
-	if _, ok := s.services[name]; !ok {
-		s.services[name] = &serviceRequestSnap{}
-	}
-	s.services[name].total++
-	s.services[name].current++
-	defer func() {
-		s.services[name].current--
-		if err == nil {
-			s.services[name].success++
-		} else {
-			s.services[name].failed++
-		}
-	}()
-	return ServiceProviderPool.Send(name, input, data)
-}
-
 func GetLocalRandomAddress() string {
 	return fmt.Sprintf(":%d", getPort())
 }

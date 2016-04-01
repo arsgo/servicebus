@@ -1,17 +1,16 @@
 package main
 
 import (
-	"github.com/colinyl/lib4go/logger"
+	//"time"
+
 	"github.com/colinyl/servicebus/cluster"
 )
 
-var vlog, _ = logger.New("service provider", true)
 func main() {
-    
-       cluster.ServiceProvider.
-    
-    
-    
-    
+
+	cluster.ServiceProvider.StartRPC()
+
+	cluster.ServiceProvider.WatchServiceConfigChange()
+	//time.Sleep(time.Hour)
 
 }

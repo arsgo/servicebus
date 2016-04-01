@@ -9,6 +9,6 @@ func (d *registerCenter) StartRPC() {
 	d.Port = address
 	d.dataMap.Set("port", d.Port)
 	d.updateNodeValue()
-	d.rpcServer = rpc.NewServiceProviderServer(address, d.Log, &rpc.ServiceHandler{})
+	d.rpcServer = rpc.NewServiceProviderServer(address, d.Log, rpc.NewServiceHandler(rpc.ServiceProviderPool))
 	d.rpcServer.Serve()
 }

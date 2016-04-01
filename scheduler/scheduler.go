@@ -13,6 +13,9 @@ type Scheduler struct {
 var (
 	Schd *Scheduler = &Scheduler{c: cron.New()}
 )
+func AddTask(trigger string,task *TaskDetail){
+    Schd.c.AddJob(trigger,task)
+}
 
 func AddJob(job *JobDetail) {
 	Schd.c.AddJob(job.config.Trigger, job)

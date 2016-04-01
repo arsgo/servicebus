@@ -2,6 +2,8 @@ package cluster
 
 import (
 	//"log"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/colinyl/lib4go/logger"
@@ -82,6 +84,30 @@ type JobConfigs struct {
 	Jobs map[string]JobConfigItem
 }
 
+var (
+	eModeShared = "shared"
+	eModeAlone  = "alone"
+)
+
+type providerService struct {
+	Name string
+	IP   string
+	Mode string
+    Script string
+}
+type providerPackage struct {
+	url     string
+	version string
+}
+
+type providerServicesConfig struct {
+	services map[string]*providerService
+}
+
+func (d *providerService) getUNIQ() string {
+	return fmt.Sprintf("%s|%s|%s", d.Name, d.IP, d.Mode)
+}
+
 //--------------------------------------------------------------------
 
 //-------------------------job consumer list----------------------------
@@ -99,24 +125,27 @@ func (s JobConsumerList) Add(jobName string, server string) {
 
 //-------------------------service consumer list----------------------------
 
-type serviceConsumer struct {
+type appServer struct {
 	dataMap  utility.DataMap
 	Last     int64
-	PathList map[string]string
+	Log *logger.Logger
 }
 
-//ServiceConsumer service consumer
-var ServiceConsumer *serviceConsumer
+
+var AppServer *appServer
 
 //--------------------------------------------------------------------
 
 //-------------------------service provider list----------------------------
 type serviceProvider struct {
-	Path    string
-	dataMap utility.DataMap
-	Last    int64
-	Log     *logger.Logger
-    Port    string
+	Path     string
+	dataMap  utility.DataMap
+	Last     int64
+	Log      *logger.Logger
+	Port     string
+	services *providerServicesConfig
+	lk       sync.Mutex
+	mode     string
 }
 
 //ServiceProvider service provider
@@ -142,6 +171,6 @@ func init() {
 	zkClient.Domain = config.Get().Domain
 	zkClient.LocalIP = utility.GetLocalIP("192.168")
 	zkClient.ZkCli, zkClient.Err = zk.New(config.Get().ZKServers, time.Second)
-    
+
 	//log.Print(zkClient.Err)
 }

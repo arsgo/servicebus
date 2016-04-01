@@ -4,27 +4,31 @@ import (
 	"errors"
 )
 
-
 var errJobConsumerNotRegister = errors.New("job consumer not register")
-var errjobNotConfig =errors.New("job not config")
+var errjobNotConfig = errors.New("job not config")
 
 const (
-	dsbServerRoot        = "@domain/dsbcenter/servers"
-	dsbServerPath        = "@domain/dsbcenter/servers/dsb_"
+	dsbServerRoot        = "@domain/rc/servers"
+	dsbServerPath        = "@domain/rc/servers/rc_"
 	dsbServerValue       = `{"domain":"@domain","path":"@path","ip":"@ip","port":"@port",server":"@type","online":"@online","lastPublish":"@pst","last":"@last"}`
-	dsbServerConfig      = "@domain/configs/dsbcenter/config"
-	servicePublishPath   = "@domain/configs/services/publish"
-	serviceRoot          = "@domain/services"
-	serviceProviderRoot  = "@domain/services/@serviceName/providers"
-	serviceProviderPath  = "@domain/services/@serviceName/providers/@ip"
-	serviceProviderValue = `{"last":@now}`
+	dsbServerConfig      = "@domain/configs/rc/config"
+	servicePublishPath   = "@domain/configs/sp/publish"
+	serviceRoot          = "@domain/sp"
+	serviceConfig        = "@domain/configs/sp/config"
+	serviceProviderRoot  = "@domain/sp/@serviceName/providers"
+	serviceProviderPath  = "@domain/sp/@serviceName/providers/@ip@port"
+	serviceProviderValue = `{"last":@last}`
 
-	serviceConsumerRoot  = "@domain/services/@serviceName/consumers"
-	serviceConsumerPath  = "@domain/services/@serviceName/consumers/@ip"
+	serviceConsumerRoot  = "@domain/sp/@serviceName/consumers"
+	serviceConsumerPath  = "@domain/sp/@serviceName/consumers/@ip"
 	serviceConsumerValue = `{"last":@now}`
-	jobRoot              = "@domain/jobs"
-	jobConfigPath        = "@domain/configs/jobs/config"
-	jobConsumerRoot      = "@domain/jobs/@jobName"
-	jobConsumerPath      = "@domain/jobs/@jobName/job"
+	jobRoot              = "@domain/job"
+	jobConfigPath        = "@domain/configs/job/config"
+	jobConsumerRoot      = "@domain/job/@jobName"
+	jobConsumerPath      = "@domain/job/@jobName/job"
 	jobConsumerValue     = `{"ip":"@ip",last":@now}`
+
+	appServerConfig   = "@domain/configs/app/@ip"
+	appServerRoot     = "@domain/app/servers"
+	appServerRootPath = "@domain/app/servers/@ip"
 )
