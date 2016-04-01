@@ -1,0 +1,14 @@
+[
+    {
+        "name": "get_pay_order",
+        "ip": "192.168.0.245",
+        "mode": "shared",
+        "script": "./scripts/get_pay_order.luac"
+    },
+    {
+        "name": "save_pay_order",
+        "ip": "192.168.0.245",
+        "mode": "alone",
+        "script": "./scripts/save_pay_order.luac"
+    }
+]
