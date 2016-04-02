@@ -2,20 +2,23 @@ package main
 
 import (
 	"runtime"
+
 	"github.com/colinyl/servicebus/cluster"
+	"github.com/colinyl/servicebus/rpc"
 	"github.com/colinyl/servicebus/scheduler"
 )
 
 func main() {
-    
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
-    
+
 	cluster.RegisterCenter.Bind()
 	cluster.RegisterCenter.WatchServicesChange(func(services map[string][]string, err error) {
 		if err != nil {
 			cluster.RegisterCenter.Log.Fatal(err.Error())
 			return
 		}
+		rpc.ServiceProviderPool.Register(services)
 	})
 
 	cluster.RegisterCenter.WatchJobChange(func(config *cluster.JobConfigs, err error) {

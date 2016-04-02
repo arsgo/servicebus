@@ -1,20 +1,19 @@
 package rpc
 
 import (
-	"errors"
 	"log"
 	"net"
 	"strings"
 	"sync"
 
 	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/colinyl/lib4go/logger"
 	p "github.com/colinyl/lib4go/pool"
 	"github.com/colinyl/servicebus/rpc/rpcservice"
 )
 
 var (
-	ERR_NOT_FIND_OBJ        error = errors.New("未找到可用的服务器连接")
-	ERR_CANT_CONNECT_SERVER error = errors.New("未找到可用的服务器连接")
+    ERROR_FORMAT    =`{"code":"@code","msg":"@msg"}`
 )
 
 type serviceProviderClient struct {
@@ -23,10 +22,22 @@ type serviceProviderClient struct {
 	client    *rpcservice.ServiceProviderClient
 	isFatal   bool
 }
+type rcServerService struct {
+	Status bool
+	IP     string
+}
+
+type rcServerPool struct {
+	pool    *p.ObjectPool
+	servers map[string]*rcServerService
+	lk      sync.Mutex
+	Log     *logger.Logger
+}
 
 type serviceProviderPool struct {
 	pool     *p.ObjectPool
 	services *Services
+    Log     *logger.Logger
 }
 
 type serviceProviderClientFactory struct {
@@ -143,7 +154,7 @@ func (j *serviceProviderClient) Close() {
 func (j *serviceProviderClient) Check() bool {
 	return !j.isFatal && j.transport != nil
 }
-func (j *serviceProviderClient) RequestFatal() {
+func (j *serviceProviderClient) Fatal() {
 	j.isFatal = true
 }
 

@@ -1,9 +1,13 @@
 package rpc
 
 import (
+	"fmt"
+	"log"
 	"time"
 
+	"github.com/colinyl/lib4go/logger"
 	p "github.com/colinyl/lib4go/pool"
+	"github.com/colinyl/lib4go/utility"
 )
 
 //serviceProviderPool consumer connections  pool
@@ -11,6 +15,7 @@ var ServiceProviderPool *serviceProviderPool
 
 //Register 注册服务列表
 func (s *serviceProviderPool) Register(svs map[string][]string) {
+	s.Log.Info("register service")
 	nsvs := CrateServices(svs)
 	//标记不能使用的服务
 	for svName, names := range s.services.data {
@@ -25,6 +30,7 @@ func (s *serviceProviderPool) Register(svs map[string][]string) {
 	for sv, servers := range nsvs.data {
 		for ip := range servers {
 			if !s.services.Contains(sv, ip) {
+				s.Log.Info("add new service")
 				s.pool.Register(ip, newserviceProviderClientFactory(ip), 1)
 				s.services.Add(sv, ip)
 			}
@@ -38,37 +44,51 @@ func (p *serviceProviderPool) UnRegister(svName string) {
 }
 
 //Request 执行Request请求
-func (p *serviceProviderPool) Request(name string, input string) (result string, err error) {
-	get := func(sv string) (string, error) {
+func (p *serviceProviderPool) Request(name string, input string) (string, error) {
+	p.services.lk.Lock()
+	defer p.services.lk.Unlock()
+
+	if len(p.services.data[name]) == 0 {
+		return p.getResult("500", "not find sp server"), nil
+	}
+	get := func(sv string) (result string, err error) {
+        p.Log.Infof("request:%s",sv)
 		o, err := p.pool.Get(sv)
 		if err != nil {
-			return "", err
+			o.Fatal()
+			return p.getResult("500", err.Error()), nil
 		}
 		if !o.Check() {
-			return "", ERR_NOT_FIND_OBJ
+			return p.getResult("400", fmt.Sprintf("sp server not available:%s", sv)), nil
 		}
 		defer p.pool.Recycle(sv, o)
 		obj := o.(*serviceProviderClient)
 		return obj.Request(name, input)
 	}
-	p.services.lk.Lock()
-	defer p.services.lk.Unlock()
+
 	for sv := range p.services.data[name] {
-		result, err = get(sv)
-		if err != nil {
-			return
+		result, err := get(sv)
+		if err == nil {
+			return result, nil
 		}
 	}
-	return
+	return p.getResult("500", "not find available sp server"), nil
 
 }
 
 //Send 发送Send请求
 func (p *serviceProviderPool) Send(name string, input string, data []byte) (result string, err error) {
-	get := func(sv string) (string, error) {
+	if len(p.services.data[name]) == 0 {
+		return p.getResult("500", "not find sp server"), nil
+	}
+	get := func(sv string) (result string, err error) {
 		o, err := p.pool.Get(sv)
 		if err != nil {
-			return "", err
+			o.Fatal()
+			return p.getResult("500", err.Error()), nil
+		}
+		if !o.Check() {
+			return p.getResult("400", "sp server not available"), nil
 		}
 		defer p.pool.Recycle(sv, o)
 		obj := o.(*serviceProviderClient)
@@ -77,12 +97,13 @@ func (p *serviceProviderPool) Send(name string, input string, data []byte) (resu
 	p.services.lk.Lock()
 	defer p.services.lk.Unlock()
 	for sv := range p.services.data[name] {
-		result, err = get(sv)
+		result, err := get(sv)
 		if err != nil {
-			return
+			return result, nil
 		}
 	}
-	return
+	return p.getResult("500", "not find available sp server"), nil
+
 }
 func (p *serviceProviderPool) clearUp() {
 	timepk := time.NewTicker(time.Second * 60)
@@ -103,11 +124,22 @@ func (p *serviceProviderPool) clearUp() {
 		}
 	}
 }
+func (p *serviceProviderPool) getResult(code string, msg string) string {
+	dmap := utility.NewDataMap()
+	dmap.Set("code", code)
+	dmap.Set("msg", msg)
+	return dmap.Translate(ERROR_FORMAT)
+}
 
 func NewServicePool() *serviceProviderPool {
+	var err error
 	pl := &serviceProviderPool{}
 	pl.pool = p.New()
 	pl.services = NewServices()
+	pl.Log, err = logger.New("service privider pool", true)
+	if err != nil {
+		log.Println(err)
+	}
 	go pl.clearUp()
 	return pl
 }
